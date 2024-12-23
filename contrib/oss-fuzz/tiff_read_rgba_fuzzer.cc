@@ -103,6 +103,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
         return 0;
     }
     raster = (uint32_t *)_TIFFmalloc(size * sizeof(uint32_t));
+    tif->tif_mode = O_RDONLY;
     if (raster != NULL)
     {
         TIFFReadRGBAImage(tif, w, h, raster, 0);
