@@ -139,6 +139,10 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
             case 3:
                 TIFFSetField(tif, TIFFTAG_PERSAMPLE, tilewidth);
                 break;
+            case 4:
+                TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX3);
+                TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_SGILOG);
+                break;
             default:
                 break;
         }
@@ -180,8 +184,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
                 break;
         }
 
-        // Re-read the image
-        TIFFReadRGBAImage(tif, w, h, raster, 0);
 
         _TIFFfree(raster);
     }
