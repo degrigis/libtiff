@@ -144,6 +144,45 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
         }
 
         TIFFReadRGBAImage(tif, w, h, raster, 0);
+
+        // Redo the same switch-case, but unset the field 
+        switch (opt1)
+        {
+            case 0:
+                TIFFUnsetField(tif, TIFFTAG_HALFTONEHINTS);
+                break;
+            case 1:
+                TIFFUnsetField(tif, TIFFTAG_MATTEING);
+                break;
+            case 2: {
+                switch(opt2){
+                    case 0:
+                        TIFFUnsetField(tif, TIFFTAG_DATATYPE);
+                        break;
+                    case 1:
+                        TIFFUnsetField(tif, TIFFTAG_DATATYPE);
+                        break;
+                    case 2:
+                        TIFFUnsetField(tif, TIFFTAG_DATATYPE);
+                        break;
+                    case 3:
+                        TIFFUnsetField(tif, TIFFTAG_DATATYPE);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            case 3:
+                TIFFUnsetField(tif, TIFFTAG_PERSAMPLE);
+                break;
+            default:
+                break;
+        }
+
+        // Re-read the image
+        TIFFReadRGBAImage(tif, w, h, raster, 0);
+
         _TIFFfree(raster);
     }
     TIFFClose(tif);
