@@ -103,9 +103,46 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
         return 0;
     }
     raster = (uint32_t *)_TIFFmalloc(size * sizeof(uint32_t));
-    tif->tif_mode = O_RDONLY;
     if (raster != NULL)
-    {
+    {   
+        // Let's play with the tags.
+        // To make it deterministic based on the seed, we based our choice on the tilewidth and imagewidth.
+        uint32_t opt1 = tilewidth % 7;
+        uint32_t opt2 = imagewidth % 4;
+        switch (opt1)
+        {
+            case 0:
+                TIFFSetField(tif, TIFFTAG_HALFTONEHINTS, 1, 1);
+                break;
+            case 1:
+                TIFFSetField(tif, TIFFTAG_MATTEING, tilewidth);
+                break;
+            case 2: {
+                switch(opt2){
+                    case 0:
+                        TIFFSetField(tif, TIFFTAG_DATATYPE, 0);
+                        break;
+                    case 1:
+                        TIFFSetField(tif, TIFFTAG_DATATYPE, 1);
+                        break;
+                    case 2:
+                        TIFFSetField(tif, TIFFTAG_DATATYPE, 2);
+                        break;
+                    case 3:
+                        TIFFSetField(tif, TIFFTAG_DATATYPE, 3);
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            case 3:
+                TIFFSetField(tif, TIFFTAG_PERSAMPLE, tilewidth);
+                break;
+            default:
+                break;
+        }
+
         TIFFReadRGBAImage(tif, w, h, raster, 0);
         _TIFFfree(raster);
     }
