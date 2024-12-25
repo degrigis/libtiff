@@ -70,18 +70,6 @@ else
         $WORK/lib/libjbig.a $WORK/lib/libjbig85.a -Wl,-Bstatic -llzma -Wl,-Bdynamic
 fi
 
-if [ "$ARCHITECTURE" = "i386" ]; then
-    $CXX $CXXFLAGS -std=c++11 -I$WORK/include \
-        $SRC/libtiff/contrib/oss-fuzz/tiff_read_rgba_strip_fuzzer.cc -o $OUT/tiff_read_rgba_strip_fuzzer \
-        $LIB_FUZZING_ENGINE $WORK/lib/libtiffxx.a $WORK/lib/libtiff.a $WORK/lib/libz.a $WORK/lib/libjpeg.a \
-        $WORK/lib/libjbig.a $WORK/lib/libjbig85.a
-else
-    $CXX $CXXFLAGS -std=c++11 -I$WORK/include \
-        $SRC/libtiff/contrib/oss-fuzz/tiff_read_rgba_strip_fuzzer.cc -o $OUT/tiff_read_rgba_strip_fuzzer \
-        $LIB_FUZZING_ENGINE $WORK/lib/libtiffxx.a $WORK/lib/libtiff.a $WORK/lib/libz.a $WORK/lib/libjpeg.a \
-        $WORK/lib/libjbig.a $WORK/lib/libjbig85.a -Wl,-Bstatic -llzma -Wl,-Bdynamic
-fi
-
 mkdir afl_testcases
 (cd afl_testcases; tar xf "$SRC/afl_testcases.tgz")
 mkdir tif
