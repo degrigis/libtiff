@@ -140,14 +140,27 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
                 TIFFSetField(tif, TIFFTAG_PERSAMPLE, tilewidth);
                 break;
             case 4:
-                TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_CCITTFAX3);
-                TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_SGILOG);
+                TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_JPEG);
+                TIFFSetField(tif, TIFFTAG_JPEGQUALITY, 75); // Set JPEG quality (0-100)
+                TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_YCBCR); // YCbCr colorspace
+                TIFFSetField(tif, TIFFTAG_YCBCRSUBSAMPLING, 2, 2); // Chroma subsampling
                 break;
             default:
                 break;
         }
 
-        TIFFReadRGBAImage(tif, w, h, raster, 0);
+        TIFFReadRGBAStrip(tif, w, h, raster, 0);
+
+
+        tstrip_t strips = TIFFNumberOfStrips(tif);
+        for (tstrip_t strip = 0; strip < strips; ++strip) {
+            if (!TIFFReadRGBAStrip(tif, strip, raster)) {
+                fprintf(stderr, "Error reading strip %d.\n", strip);
+                break;
+            }
+
+        // Process the raster data (bottom-up order)
+        printf("Read strip %d successfully.\n", strip);
 
         // Redo the same switch-case, but unset the field 
         switch (opt1)
