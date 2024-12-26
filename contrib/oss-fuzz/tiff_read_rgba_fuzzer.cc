@@ -83,121 +83,49 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
         TIFFClose(tif);
         return 0;
     }
-    /* another hack to work around an OOM in tif_fax3.c */
-    uint32_t tilewidth = 0;
-    uint32_t imagewidth = 0;
-    TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tilewidth);
-    TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &imagewidth);
-    tilewidth = __TIFFSafeMultiply(uint32_t, tilewidth, 2);
-    imagewidth = __TIFFSafeMultiply(uint32_t, imagewidth, 2);
-    if (tilewidth * 2 > MAX_SIZE || imagewidth * 2 > MAX_SIZE ||
-        tilewidth == 0 || imagewidth == 0)
-    {
-        TIFFClose(tif);
-        return 0;
+    
+    if(TIFFIsTiled(tif)){
+        /* another hack to work around an OOM in tif_fax3.c */
+        uint32_t tilewidth = 0;
+        uint32_t imagewidth = 0;
+        TIFFGetField(tif, TIFFTAG_TILEWIDTH, &tilewidth);
+        TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &imagewidth);
+        tilewidth = __TIFFSafeMultiply(uint32_t, tilewidth, 2);
+        imagewidth = __TIFFSafeMultiply(uint32_t, imagewidth, 2);
+        if (tilewidth * 2 > MAX_SIZE || imagewidth * 2 > MAX_SIZE ||
+            tilewidth == 0 || imagewidth == 0)
+        {
+            TIFFClose(tif);
+            return 0;
+        }
+    }else{
+        // check the size of the non-tiled image
+        uint32_t rowsize = 0;
+        uint32_t stripsize = 0;
+        TIFFGetField(tif, TIFFTAG_ROWSPERSTRIP, &rowsize);
+        stripsize = TIFFStripSize(tif);
+        rowsize = __TIFFSafeMultiply(uint32_t, rowsize, 2);
+        stripsize = __TIFFSafeMultiply(uint32_t, stripsize, 2);
+        if (rowsize * 2 > MAX_SIZE || stripsize * 2 > MAX_SIZE ||
+            rowsize == 0 || stripsize == 0)
+        {
+            TIFFClose(tif);
+            return 0;
+        }
     }
+
     uint32_t size = __TIFFSafeMultiply(uint32_t, w, h);
+    
     if (size > MAX_SIZE || size == 0)
     {
         TIFFClose(tif);
         return 0;
     }
+    
     raster = (uint32_t *)_TIFFmalloc(size * sizeof(uint32_t));
     if (raster != NULL)
     {   
-        // Let's play with the tags.
-        // To make it deterministic based on the seed, we based our choice on the tilewidth and imagewidth.
-        uint32_t opt1 = tilewidth % 7;
-        uint32_t opt2 = imagewidth % 4;
-        switch (opt1)
-        {
-            case 0:
-                TIFFSetField(tif, TIFFTAG_HALFTONEHINTS, 1, 1);
-                break;
-            case 1:
-                TIFFSetField(tif, TIFFTAG_MATTEING, tilewidth);
-                break;
-            case 2: {
-                switch(opt2){
-                    case 0:
-                        TIFFSetField(tif, TIFFTAG_DATATYPE, 0);
-                        break;
-                    case 1:
-                        TIFFSetField(tif, TIFFTAG_DATATYPE, 1);
-                        break;
-                    case 2:
-                        TIFFSetField(tif, TIFFTAG_DATATYPE, 2);
-                        break;
-                    case 3:
-                        TIFFSetField(tif, TIFFTAG_DATATYPE, 3);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            case 3:
-                TIFFSetField(tif, TIFFTAG_PERSAMPLE, tilewidth);
-                break;
-            case 4:
-                TIFFSetField(tif, TIFFTAG_COMPRESSION, COMPRESSION_JPEG);
-                TIFFSetField(tif, TIFFTAG_JPEGQUALITY, 75); // Set JPEG quality (0-100)
-                TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_YCBCR); // YCbCr colorspace
-                TIFFSetField(tif, TIFFTAG_YCBCRSUBSAMPLING, 2, 2); // Chroma subsampling
-                break;
-            default:
-                break;
-        }
-
-        TIFFReadRGBAStrip(tif, w, h, raster, 0);
-
-
-        tstrip_t strips = TIFFNumberOfStrips(tif);
-        for (tstrip_t strip = 0; strip < strips; ++strip) {
-            if (!TIFFReadRGBAStrip(tif, strip, raster)) {
-                fprintf(stderr, "Error reading strip %d.\n", strip);
-                break;
-            }
-
-        // Process the raster data (bottom-up order)
-        printf("Read strip %d successfully.\n", strip);
-
-        // Redo the same switch-case, but unset the field 
-        switch (opt1)
-        {
-            case 0:
-                TIFFUnsetField(tif, TIFFTAG_HALFTONEHINTS);
-                break;
-            case 1:
-                TIFFUnsetField(tif, TIFFTAG_MATTEING);
-                break;
-            case 2: {
-                switch(opt2){
-                    case 0:
-                        TIFFUnsetField(tif, TIFFTAG_DATATYPE);
-                        break;
-                    case 1:
-                        TIFFUnsetField(tif, TIFFTAG_DATATYPE);
-                        break;
-                    case 2:
-                        TIFFUnsetField(tif, TIFFTAG_DATATYPE);
-                        break;
-                    case 3:
-                        TIFFUnsetField(tif, TIFFTAG_DATATYPE);
-                        break;
-                    default:
-                        break;
-                }
-            }
-
-            case 3:
-                TIFFUnsetField(tif, TIFFTAG_PERSAMPLE);
-                break;
-            default:
-                break;
-        }
-
-
+        TIFFReadRGBAImage(tif, w, h, raster, 0);
         _TIFFfree(raster);
     }
     TIFFClose(tif);
