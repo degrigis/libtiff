@@ -126,6 +126,28 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *Data, size_t Size)
     if (raster != NULL)
     {   
         TIFFReadRGBAImage(tif, w, h, raster, 0);
+
+        if(!TIFFIsTiled(tif)){
+            // Allocate a buffer to hold one scanline
+            tsize_t scanlineSize = TIFFScanlineSize(tif);
+            void* buffer = malloc(scanlineSize);
+            if (!buffer) {
+                fprintf(stderr, "Memory allocation failed\n");
+                _TIFFfree(buffer);
+                TIFFClose(tif);
+                return 1;
+            }
+
+            // Read each scanline
+            for (uint32_t row = 0; row < h; row++) {
+                if (TIFFReadScanline(tif, buffer, row, 0) < 0) {
+                    _TIFFfree(buffer);
+                    TIFFClose(tif);
+                    return 1;
+                }
+            }
+        }
+
         _TIFFfree(raster);
     }
     TIFFClose(tif);
